@@ -1,24 +1,26 @@
 <?php
-//Incluindo o arquivo o arquivo de conexão nesse arquivo
-include "conecta.php";
+session_start();
+require_once "conecta.php";
 
-// Recebendo os dados do formulário
-$cpf = $_POST['cpf'];
-$senha = $_POST['senha'];
+$cpf = $_POST['cpf'] ?? '';
+$senha = $_POST['senha'] ?? '';
 
-// Consulta SQL insegura
-$sql = "SELECT * FROM aluno WHERE cpf = '$cpf' AND senha = '$senha'";
+// 1. Prepara a query
+$sql = "SELECT * FROM aluno WHERE cpf = :cpf AND senha = :senha";
+$stmt = $conexao->prepare($sql);
 
-try {
-    // Executando a consulta
-    $resultado = $conexao->query($sql);
+// 2. EXECUTA (isso tem que vir antes de checar as linhas!)
+$stmt->execute([
+    ':cpf' => $cpf,
+    ':senha' => $senha
+]);
 
-    if ( $linha = $resultado->fetch() ) { // fetch() retorna false se não tiver linhas
-        echo "Login bem-sucedido!";
-    } else {
-        echo "CPF ou senha incorretos.";
-    }
-} catch (PDOException $e) {
-    echo "Erro ao executar consulta: " . $e->getMessage();
+// 3. Agora sim, verifica se achou alguém
+if ($stmt->rowCount() > 0) {
+    $_SESSION['cpf'] = $cpf;
+    header("Location: lista.php");
+    exit();
+} else {
+    header("Location: index.php?erro=1");
+    exit();
 }
-?>
